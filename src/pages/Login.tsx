@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Zap, Mail, Lock, ArrowRight } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { user, signIn, loading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -13,11 +11,6 @@ const Login: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-
-  // Redirect if already logged in
-  if (user && !authLoading) {
-    return <Navigate to="/dashboard" replace />;
-  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -59,20 +52,21 @@ const Login: React.FC = () => {
 
     setIsLoading(true);
     
+    // Simulate API call
     try {
-      const { error } = await signIn(formData.email, formData.password);
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setErrors({ general: 'Invalid email or password. Please try again.' });
-        } else {
-          setErrors({ general: error.message || 'Login failed. Please try again.' });
-        }
-      } else {
-        navigate('/dashboard');
-      }
+      // Mock successful login
+      localStorage.setItem('owl_auth_token', 'mock_jwt_token');
+      localStorage.setItem('owl_user', JSON.stringify({
+        email: formData.email,
+        name: 'John Doe',
+        businessName: 'My Business'
+      }));
+      
+      navigate('/dashboard');
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: 'Login failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -196,6 +190,15 @@ const Login: React.FC = () => {
               )}
             </button>
           </form>
+
+          {/* Demo Credentials */}
+          <div className="mt-6 p-4 bg-slate-700/30 rounded-xl border border-slate-600/50">
+            <p className="text-slate-300 text-sm font-medium mb-2">Demo Credentials:</p>
+            <div className="space-y-1 text-xs text-slate-400">
+              <p>Email: demo@owl.com</p>
+              <p>Password: demo123</p>
+            </div>
+          </div>
 
           {/* Sign Up Link */}
           <div className="mt-8 text-center">
