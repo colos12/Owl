@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Zap, Mail, Lock, User, Building, ArrowRight, CheckCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
+  const { user, signUp, loading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -19,6 +21,11 @@ const Signup: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  // Redirect if already logged in
+  if (user && !authLoading) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -101,21 +108,29 @@ const Signup: React.FC = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { error } = await signUp(
+        formData.email,
+        formData.password,
+        {
+          name: `${formData.firstName} ${formData.lastName}`,
+          businessName: formData.businessName
+        }
+      );
       
-      // Mock successful signup
-      localStorage.setItem('owl_auth_token', 'mock_jwt_token');
-      localStorage.setItem('owl_user', JSON.stringify({
-        email: formData.email,
-        name: `${formData.firstName} ${formData.lastName}`,
-        businessName: formData.businessName
-      }));
-      
-      navigate('/dashboard');
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          setErrors({ general: 'An account with this email already exists. Please sign in instead.' });
+        } else if (error.message.includes('Password should be at least')) {
+          setErrors({ password: 'Password should be at least 6 characters long.' });
+        } else {
+          setErrors({ general: error.message || 'Signup failed. Please try again.' });
+        }
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
-      setErrors({ general: 'Signup failed. Please try again.' });
+      setErrors({ general: 'An unexpected error occurred. Please try again.' });
     } finally {
       setIsLoading(false);
     }

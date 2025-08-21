@@ -1,8 +1,9 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { Menu, X, LogOut, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,38 +12,24 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('owl_auth_token');
-    const userData = localStorage.getItem('owl_user');
-    
-    if (!token || !userData) {
-      navigate('/login');
-      return;
-    }
-    
-    try {
-      setUser(JSON.parse(userData));
-    } catch (error) {
-      navigate('/login');
-    }
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('owl_auth_token');
-    localStorage.removeItem('owl_user');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 
-  if (!user) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-teal-400/30 border-t-teal-400 rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -69,9 +56,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-teal-400 to-purple-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">{user.name?.charAt(0) || 'U'}</span>
+                <span className="text-white font-bold text-sm">{user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}</span>
               </div>
-              <span className="text-lg font-bold text-white">{user.businessName}</span>
+              <span className="text-lg font-bold text-white">{user.businessName || 'My Business'}</span>
             </div>
           </div>
         </div>
@@ -85,11 +72,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 className="flex items-center space-x-3 p-2 hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
               >
                 <div className="text-right">
-                  <div className="text-white font-medium text-sm">{user.name}</div>
-                  <div className="text-slate-400 text-xs">{user.businessName}</div>
+                  <div className="text-white font-medium text-sm">{user.name || 'User'}</div>
+                  <div className="text-slate-400 text-xs">{user.businessName || 'My Business'}</div>
                 </div>
                 <div className="w-8 h-8 bg-gradient-to-r from-teal-400 to-purple-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{user.name?.charAt(0) || 'U'}</span>
+                  <span className="text-white font-bold text-sm">{user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}</span>
                 </div>
               </button>
               
